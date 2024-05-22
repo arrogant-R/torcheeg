@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Tuple, Union
 import numpy as np
 import scipy.io as scio
 from ..base_dataset import BaseDataset
+from ....utils import get_random_dir_path
 
 
 class SEEDIVFeatureDataset(BaseDataset):
@@ -13,7 +14,7 @@ class SEEDIVFeatureDataset(BaseDataset):
 
     - Author: Zheng et al.
     - Year: 2018
-    - Download URL: https://ieeexplore.ieee.org/abstract/document/8283814
+    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html
     - Reference: Zheng W L, Liu W, Lu Y, et al. Emotionmeter: A multimodal framework for recognizing human emotions[J]. IEEE transactions on cybernetics, 2018, 49(3): 1110-1122.
     - Stimulus: 168 film clips.
     - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 15 subjects (8 females). Each subject conducts the experiments in three sessions, and each session contains 24 trials (6 per emotional category) totally 15 people x 3 sessions x 24 trials.
@@ -30,12 +31,15 @@ class SEEDIVFeatureDataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = SEEDIVFeatureDataset(io_path=f'./seed',
-                              root_path='./eeg_feature_smooth',
-                              features=['de_movingAve'],
-                              offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Select('emotion'))
+        from torcheeg.datasets import SEEDIVFeatureDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEED_IV_CHANNEL_LOCATION_DICT
+        
+        dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
+                                       features=['de_movingAve'],
+                                       offline_transform=transforms.ToGrid         (SEED_IV_CHANNEL_LOCATION_DICT),
+                                       online_transform=transforms.ToTensor(),
+                                       label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch.Tensor[5, 9, 9]),
         # coresponding baseline signal (torch.Tensor[5, 9, 9]),
@@ -44,34 +48,21 @@ class SEEDIVFeatureDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
-        dataset = SEEDIVFeatureDataset(io_path=f'./seed',
-                              root_path='./eeg_feature_smooth',
-                              features=['de_movingAve'],
-                              online_transform=ToG(SEED_ADJACENCY_MATRIX),
-                              label_transform=transforms.Select('emotion'))
+
+        from torcheeg.datasets import SEEDIVFeatureDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+        
+        dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
+                                       features=['de_movingAve'],
+                                       online_transform=ToG(SEED_ADJACENCY_MATRIX),
+                                       label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
         
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
-
-    .. code-block:: python
-    
-        if __name__ == '__main__':
-            dataset = SEEDIVFeatureDataset(io_path=f'./seed',
-                              root_path='./eeg_feature_smooth',
-                              feature=['de_movingAve'],
-                              offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Select('emotion'),
-                              num_worker=4)
-            print(dataset[0])
-            # EEG signal (torch_geometric.data.Data),
-            # coresponding baseline signal (torch_geometric.data.Data),
-            # label (int)
-
     Args:
         root_path (str): Downloaded data files in matlab (unzipped ExtractedFeatures.zip) formats (default: :obj:`'./ExtractedFeatures'`)
         feature (list): A list of selected feature names. The selected features corresponding to each electrode will be concatenated together. Feature names supported by the SEED dataset include de_movingAve, de_LDS, psd_movingAve, and etc. (default: :obj:`['de_movingAve']`)
@@ -81,12 +72,11 @@ class SEEDIVFeatureDataset(BaseDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 3D EEG signal with shape (number of windows, number of electrodes, number of features), whose ideal output shape is also (number of windows, number of electrodes, number of features).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/seed_iv_feature`)
-        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
-        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. (default: :obj:`lmdb`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
+        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
+        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
+        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
     '''
 
     def __init__(self,
@@ -100,12 +90,14 @@ class SEEDIVFeatureDataset(BaseDataset):
                  after_trial: Union[Callable, None] = None,
                  after_session: Union[Callable, None] = None,
                  after_subject: Union[Callable, None] = None,
-                 io_path: str = './io/seed_iv_feature',
-                 io_size: int = 10485760,
+                 io_path: Union[None, str] = None,
+                 io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
-                 verbose: bool = True,
-                 in_memory: bool = False):
+                 verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -122,8 +114,7 @@ class SEEDIVFeatureDataset(BaseDataset):
             'io_size': io_size,
             'io_mode': io_mode,
             'num_worker': num_worker,
-            'verbose': verbose,
-            'in_memory': in_memory
+            'verbose': verbose
         }
         super().__init__(**params)
         # save all arguments to __dict__
@@ -219,15 +210,18 @@ class SEEDIVFeatureDataset(BaseDataset):
 
                 # record meta info for each signal
                 record_info = {
-                    'start_at': i * 400,
+                    'start_at': i * 800,
                     'end_at': (i + 1) *
-                    400,  # The size of the sliding time windows for feature extraction is 4 seconds.
+                    800,  # The size of the sliding time windows for feature extraction is 4 seconds.
                     'clip_id': clip_id
                 }
                 record_info.update(trial_meta_info)
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
-                
+
     def set_records(self, root_path: str = './eeg_feature_smooth', **kwargs):
+        assert os.path.exists(
+            root_path
+        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
 
         session_list = ['1', '2', '3']
         file_path_list = []

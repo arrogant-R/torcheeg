@@ -27,7 +27,7 @@ In this tutorial, we'll walk through how to train a Conditional Wasserstein Gene
 from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
 
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(
@@ -57,7 +57,7 @@ dataset = DEAPDataset(
 # testing.
 # 
 
-from torcheeg.datasets import KFoldGroupbyTrial
+from torcheeg.model_selection import KFoldGroupbyTrial
 
 k_fold = KFoldGroupbyTrial(n_splits=5,
                            split_path='./examples_deap_cwgangp/split',

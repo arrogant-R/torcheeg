@@ -14,7 +14,8 @@ from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
+
 
 class BetaVAETrainer(pl.LightningModule):
     r'''
@@ -26,11 +27,12 @@ class BetaVAETrainer(pl.LightningModule):
 
     .. code-block:: python
         
+        from torcheeg.models import BEncoder, BDecoder
+        from torcheeg.trainers import BetaVAETrainer
+
         encoder = BEncoder(in_channels=4)
         decoder = BDecoder(in_channels=64, out_channels=4)
         trainer = BetaVAETrainer(encoder, decoder)
-        trainer.fit(train_loader, val_loader)
-        trainer.test(test_loader)
 
     Args:
         encoder (nn.Module): The encoder, whose inputs are EEG signals, outputs are two batches of vectors of the same dimension, representing the mean and variance estimated in the reparameterization trick.
@@ -48,6 +50,7 @@ class BetaVAETrainer(pl.LightningModule):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(self,
                  encoder: nn.Module,
                  decoder: nn.Module,
@@ -220,7 +223,7 @@ class BetaVAETrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_rec_loss.reset()
@@ -271,7 +274,7 @@ class BetaVAETrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.val_rec_loss.reset()
@@ -348,7 +351,7 @@ class BetaVAETrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.test_rec_loss.reset()
@@ -399,6 +402,7 @@ class CBetaVAETrainer(BetaVAETrainer):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(self,
                  encoder: nn.Module,
                  decoder: nn.Module,
