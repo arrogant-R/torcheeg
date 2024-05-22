@@ -13,7 +13,7 @@ from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 
 class GlowTrainer(pl.LightningModule):
@@ -28,8 +28,6 @@ class GlowTrainer(pl.LightningModule):
         
         model = BGlow(in_channels=4)
         trainer = GlowTrainer(model)
-        trainer.fit(train_loader, val_loader)
-        trainer.test(test_loader)
 
     Args:
         model (nn.Module): Normalized flow model, it needs to implement two interfaces, log_probs and sample. Among them, log_probs takes the original sample as input to calculate the log probs to the target distribution, and sample takes num and temperature as input to calculate the generated sample.
@@ -48,6 +46,7 @@ class GlowTrainer(pl.LightningModule):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(self,
                  model: nn.Module,
                  lr: float = 1e-4,
@@ -182,7 +181,7 @@ class GlowTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_loss.reset()
@@ -211,7 +210,7 @@ class GlowTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.val_loss.reset()
@@ -266,7 +265,7 @@ class GlowTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.test_loss.reset()
@@ -315,6 +314,7 @@ class CGlowTrainer(GlowTrainer):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(self,
                  model: nn.Module,
                  lr: float = 1e-4,
@@ -425,7 +425,7 @@ class CGlowTrainer(GlowTrainer):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_kld_loss.reset()
@@ -465,7 +465,7 @@ class CGlowTrainer(GlowTrainer):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.val_kld_loss.reset()
@@ -530,7 +530,7 @@ class CGlowTrainer(GlowTrainer):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.test_kld_loss.reset()

@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torchmetrics
 from torch.utils.data import DataLoader
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 
 class SimCLRTrainer(pl.LightningModule):
@@ -22,15 +22,31 @@ class SimCLRTrainer(pl.LightningModule):
 
     .. code-block:: python
 
+        from torcheeg.models import CCNN
+        from torcheeg.trainers import BYOLTrainer
+
+        class Extractor(CCNN):
+            def forward(self, x):
+                x = self.conv1(x)
+                x = self.conv2(x)
+                x = self.conv3(x)
+                x = self.conv4(x)
+                x = x.flatten(start_dim=1)
+                return x
+
+        extractor = Extractor(in_channels=5, num_classes=3)
         trainer = SimCLRTrainer(extractor,
                                 devices=1,
                                 accelerator='gpu')
-        trainer.fit(train_loader, val_loader)
 
     NOTE: The first element of each batch in :obj:`train_loader` and :obj:`val_loader` should be a two-tuple, representing two random transformations (views) of data. You can use :obj:`Contrastive` to achieve this functionality.
 
     .. code-block:: python
 
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        
         contras_dataset = DEAPDataset(
             io_path=f'./io/deap',
             root_path='./data_preprocessed_python',
@@ -51,9 +67,6 @@ class SimCLRTrainer(pl.LightningModule):
             baseline_chunk_size=128,
             num_baseline=3)
 
-        trainer = SimCLRTrainer(extractor,
-                                devices=1,
-                                accelerator='gpu')
         trainer.fit(train_loader, val_loader)
 
     Args:
@@ -233,7 +246,7 @@ class SimCLRTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_loss.reset()
@@ -340,7 +353,7 @@ class SimCLRTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.val_loss.reset()

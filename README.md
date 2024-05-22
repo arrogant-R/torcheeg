@@ -16,7 +16,7 @@
 [![Downloads][pepy-image]][pepy-url]
 [![Join the Chat][gitter-image]][gitter-url]
 
-**[Documentation](https://torcheeg.readthedocs.io/)** | **[TorchEEG Examples](https://github.com/torcheeg/torcheeg/tree/main/examples)**
+**[Documentation](https://torcheeg.readthedocs.io/)** | **[TorchEEG Examples](https://github.com/torcheeg/torcheeg/tree/main/examples)** | **[Paper](https://www.sciencedirect.com/science/article/pii/S0957417424004159)**
 
 TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG aims to provide a plug-and-play EEG analysis tool, so that researchers can quickly reproduce EEG analysis work and start new EEG analysis research without paying attention to technical details unrelated to the research focus.
 
@@ -146,7 +146,7 @@ The `torcheeg.datasets` module contains dataset classes for many real-world EEG 
 from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
 
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(
@@ -175,7 +175,7 @@ Here, `offline_transform` will only be called once when the dataset is initializ
 Next, we need to divide the dataset into a training set and a test set. In the field of EEG analysis, commonly used data partitioning methods include k-fold cross-validation and leave-one-out cross-validation. In this tutorial, we use k-fold cross-validation on the entire dataset (`KFold`) as an example of dataset splitting.
 
 ```python
-from torcheeg.datasets import KFoldGroupbyTrial
+from torcheeg.model_selection import KFoldGroupbyTrial
 
 k_fold = KFoldGroupbyTrial(n_splits=10,
                            split_path='./tmp_out/examples_pipeline/split',
@@ -255,10 +255,39 @@ If you would like to contribute new datasets, deep learning methods, and extensi
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/wufei-png">
+            <img src="https://avatars.githubusercontent.com/u/63766429?v=4" width="100;" alt="wufei-png"/>
+            <br />
+            <sub><b>Wu Fei</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/nmq443">
+            <img src="https://avatars.githubusercontent.com/u/83683836?v=4" width="100;" alt="nmq443"/>
+            <br />
+            <sub><b>Nguyen Minh Quang</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/MicheleBarsotti">
             <img src="https://avatars.githubusercontent.com/u/48720814?v=4" width="100;" alt="MicheleBarsotti"/>
             <br />
             <sub><b>Meekele_b</b></sub>
+        </a>
+    </td></tr>
+<tr>
+    <td align="center">
+        <a href="https://github.com/dawin2015">
+            <img src="https://avatars.githubusercontent.com/u/12325204?v=4" width="100;" alt="dawin2015"/>
+            <br />
+            <sub><b>Liu-darong</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/Nhix00">
+            <img src="https://avatars.githubusercontent.com/u/75837033?v=4" width="100;" alt="Nhix00"/>
+            <br />
+            <sub><b>Nhix</b></sub>
         </a>
     </td>
     <td align="center">
@@ -274,3 +303,18 @@ If you would like to contribute new datasets, deep learning methods, and extensi
 ## License
 
 TorchEEG has a MIT license, as found in the [LICENSE](https://github.com/torcheeg/torcheeg/blob/main/LICENSE) file.
+
+## Citation
+
+If you find this project useful for your research, please cite:
+
+```latex
+@article{zhang2024torcheeg,
+    title = {{TorchEEGEMO}: A deep learning toolbox towards {EEG}-based emotion recognition},
+    journal = {Expert Systems with Applications},
+    pages = {123550},
+    year = {2024},
+    issn = {0957-4174},
+    author = {Zhi Zhang and Sheng-hua Zhong and Yan Liu}
+}
+```
