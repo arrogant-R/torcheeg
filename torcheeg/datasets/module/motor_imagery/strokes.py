@@ -163,7 +163,7 @@ class StrokePatientsMIDataset(BaseDataset):
             assert chunk_size > overlap, f"Arg 'chunk_size' must be larger than arg 'overlap'.Current chunksize is {chunk_size},overlap is {overlap}"
             start = 1000
             step = chunk_size - overlap
-            end = start + step
+            end = start + chunk_size
             end_time_point = 3000
 
             write_pointer = 0
@@ -213,7 +213,7 @@ class StrokePatientsMIDataset(BaseDataset):
             assert chunk_size > overlap, f"Arg 'chunk_size' must be larger than arg 'overlap'.Current chunksize is {chunk_size},overlap is {overlap}"
             start = 1000
             step = chunk_size - overlap
-            end = start + step
+            end = start + chunk_size
             end_time_point = 3000
 
             write_pointer = 0

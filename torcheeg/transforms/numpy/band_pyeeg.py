@@ -31,7 +31,8 @@ class BandTransform(EEGTransform):
         self.sampling_rate = sampling_rate
         self.order = order
         self.band_dict = band_dict
-
+    
+    @EEGTransform.numpy_based
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         band_list = []
         for low, high in self.band_dict.values():

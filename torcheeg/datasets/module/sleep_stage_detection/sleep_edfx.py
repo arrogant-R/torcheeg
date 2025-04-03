@@ -235,10 +235,10 @@ class SleepEDFxDataset(BaseDataset):
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
 
-        self.eeg_dir = "sleep-" + kwargs["version"]
+        eeg_dir = "sleep-" + kwargs["version"]
         return list(
             filter(lambda item: item[-7:] == "PSG.edf",
-                   os.listdir(os.path.join(root_path, self.eeg_dir))))
+                   os.listdir(os.path.join(root_path, eeg_dir))))
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)
