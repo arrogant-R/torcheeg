@@ -1,6 +1,8 @@
 # https://github.com/albumentations-team/albumentations/blob/master/albumentations/core/transforms_interface.py
 
 from typing import Callable, Dict, Union, List
+import torch 
+import numpy as np
 
 
 class BaseTransform:
@@ -76,11 +78,44 @@ class BaseTransform:
         return format_string
 
 class EEGTransform(BaseTransform):
+
+
+    def numpy_based(func):
+        def wrapper(self,eeg:any, **kwargs):
+           if isinstance(eeg,torch.Tensor):
+                eeg= eeg.cpu().float().numpy()
+                res = func(self,eeg,**kwargs)
+                res = torch.from_numpy(res).float()
+                return res
+           elif isinstance(eeg,np.ndarray):
+               return func(self,eeg,**kwargs)
+           
+           else:
+               raise TypeError('the input should be either torch tensor or numpy array.')
+            
+        return wrapper
+    
+    def torch_based(func):
+        def wrapper(self,eeg:any, **kwargs):
+            if isinstance(eeg,np.ndarray):
+                eeg= torch.from_numpy(eeg).float()
+                res = func(self,eeg,**kwargs)
+                res =res.cpu().float().numpy()
+                return res
+            elif isinstance(eeg,torch.Tensor):
+                return func(self,eeg,**kwargs)
+            else:
+                raise TypeError('the input should be either torch tensor or numpy array.')
+                
+        return wrapper
+
+
     def __init__(self, apply_to_baseline: bool = False):
         super(EEGTransform, self).__init__()
         self.apply_to_baseline = apply_to_baseline
         if apply_to_baseline:
             self.add_targets({'baseline': 'eeg'})
+
 
     @property
     def targets(self):

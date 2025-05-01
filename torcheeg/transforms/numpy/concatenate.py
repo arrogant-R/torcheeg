@@ -127,12 +127,16 @@ class MapChunk(EEGTransform):
                  transform: EEGTransform,
                  chunk_size: int = 250,
                  overlap: int = 0,
+                 stack:bool = False,
+                 chunk_dim = -1,
                  apply_to_baseline: bool = False):
         super(MapChunk,
               self).__init__(apply_to_baseline=apply_to_baseline)
         self.transform = transform
         self.chunk_size = chunk_size
         self.overlap = overlap
+        self.stack = stack
+        self.chunk_dim = chunk_dim
 
     def __call__(self, *args, **kwargs) -> Dict[str, np.ndarray]:
         r'''
@@ -143,61 +147,77 @@ class MapChunk(EEGTransform):
         Returns:
             np.ndarray: The combined results of a transform from multiple chunks.
         '''
+        
         target_kwargs = {}
         non_target_kwargs = {}
 
-        check_len_key = None
-        check_len_value = None
+        # check_len_key = None
+        # check_len_value = None
 
-        for kwargs_key, kwargs_value in kwargs.items():
+        for kwargs_key_org, kwargs_value in kwargs.items():
+
+            kwargs_key = self._additional_targets.get(kwargs_key_org,kwargs_key_org)
+
             if not kwargs_key in self.targets:
                 non_target_kwargs[kwargs_key] = kwargs_value
                 continue
 
-            if not check_len_key:
-                check_len_key = kwargs_key
-                check_len_value = len(kwargs_value)
-            else:
-                assert len(
-                    kwargs_value
-                ) == check_len_value, f'The lengths of {check_len_key} ({check_len_value}) and {kwargs_key} ({len(kwargs_value)}) in the input signal are not the same.'
+            # if not check_len_key:
+            #     check_len_key = kwargs_key
+            #     check_len_value = len(kwargs_value)
+            # else:
+            #     assert len(
+            #         kwargs_value
+            #     ) == check_len_value, f'The lengths of {check_len_key} ({check_len_value}) and {kwargs_key} ({len(kwargs_value)}) in the input signal are not the same.'
 
             start_at = 0
             end_at = start_at + self.chunk_size
             step = self.chunk_size - self.overlap
 
             chunk_kwargs_value = []
-            while end_at <= kwargs_value.shape[1]:
-                chunk_kwargs_value.append(kwargs_value[:, start_at:end_at])
+            
+            chunk_dim = kwargs_value.ndim + self.chunk_dim if self.chunk_dim < 0 else self.chunk_dim
+            while end_at <= kwargs_value.shape[self.chunk_dim]:
+                index =  tuple(slice(None) if i !=chunk_dim else range(start_at,end_at) for i in range(kwargs_value.ndim))
+                chunk_kwargs_value.append(kwargs_value[index])
                 start_at = start_at + step
                 end_at = start_at + self.chunk_size
-            target_kwargs[kwargs_key] = chunk_kwargs_value
+            target_kwargs[kwargs_key_org] = chunk_kwargs_value
+            
 
         new_target_kwargs = {}
-        num_chunk = len(list(target_kwargs.values())[0])
-        for chunk_index in range(num_chunk):
-            cur_target_kwargs = {
-                k: v[chunk_index]
-                for k, v in target_kwargs.items()
-            }
-            cur_target_kwargs.update(non_target_kwargs)
-            new_kwargs_t = self.transform(**kwargs)
+        for target_key,target_value in target_kwargs.items():
+            num_chunk = len(target_value)
+            transform_target_key = self._additional_targets.get(target_key,target_key)
+            for chunk_index in range(num_chunk):
+                cur_target_kwargs = {
+                  transform_target_key: target_value[chunk_index]
+                }
+                
+                cur_target_kwargs.update(non_target_kwargs)
 
-            for new_kwargs_key, new_kwargs_value in new_kwargs_t.items():
-                if not new_kwargs_key in self.targets:
-                    continue
-                assert isinstance(
-                    new_kwargs_value, np.ndarray
-                ), f'Concate only supports concatenating numpy.ndarray type data, you are trying to concatenate {type(new_kwargs_value)} type data.'
-                if not new_kwargs_key in new_target_kwargs:
-                    new_target_kwargs[new_kwargs_key] = []
-                new_target_kwargs[new_kwargs_key].append(new_kwargs_value)
+                new_kwargs_t = self.transform(**cur_target_kwargs)
+
+                for new_kwargs_key, new_kwargs_value in new_kwargs_t.items():
+                    if not new_kwargs_key == transform_target_key:
+                        continue
+                    assert isinstance(
+                        new_kwargs_value, np.ndarray
+                    ), f'Concate only supports concatenating numpy.ndarray type data, you are trying to concatenate {type(new_kwargs_value)} type data.'
+                    if not target_key in new_target_kwargs:
+                        new_target_kwargs[target_key] = []
+                        
+                    new_target_kwargs[target_key].append(new_kwargs_value)
 
         for new_target_kwargs_key, new_target_kwargs_value in new_target_kwargs.items(
         ):
-            new_target_kwargs[new_target_kwargs_key] = np.concatenate(
-                new_target_kwargs_value, axis=-1)
-
+            if self.stack:
+               
+                new_target_kwargs[new_target_kwargs_key] = np.stack(
+                new_target_kwargs_value)
+            else:
+                new_target_kwargs[new_target_kwargs_key] = np.concatenate(
+                    new_target_kwargs_value, axis=self.chunk_dim)
         new_target_kwargs.update(non_target_kwargs)
         return new_target_kwargs
 

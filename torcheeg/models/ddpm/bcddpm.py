@@ -164,15 +164,15 @@ class BCUNet(nn.Module):
         self.label_embeding = nn.Embedding(num_classes, beta_timesteps)
 
         self.inc = DoubleConv(in_channels, hid_channels)
-        self.down1 = Down(hid_channels, hid_channels * 2)
+        self.down1 = Down(hid_channels, hid_channels * 2,beta_timesteps)
 
         att1_grid_size = (grid_size[0] // 2, grid_size[1] // 2)
         self.att1 = SelfAttention(hid_channels * 2, att1_grid_size)
-        self.down2 = Down(hid_channels * 2, hid_channels * 4)
+        self.down2 = Down(hid_channels * 2, hid_channels * 4,beta_timesteps)
 
         att2_grid_size = (att1_grid_size[0] // 2, att1_grid_size[1] // 2)
         self.att2 = SelfAttention(hid_channels * 4, att2_grid_size)
-        self.down3 = Down(hid_channels * 4, hid_channels * 4)
+        self.down3 = Down(hid_channels * 4, hid_channels * 4,beta_timesteps)
 
         att3_grid_size = (att2_grid_size[0] // 2, att2_grid_size[1] // 2)
         self.att3 = SelfAttention(hid_channels * 4, att3_grid_size)
@@ -181,13 +181,13 @@ class BCUNet(nn.Module):
         self.bot2 = DoubleConv(hid_channels * 8, hid_channels * 8)
         self.bot3 = DoubleConv(hid_channels * 8, hid_channels * 4)
 
-        self.up1 = Up(hid_channels * 8, hid_channels * 2, att2_grid_size)
+        self.up1 = Up(hid_channels * 8, hid_channels * 2, att2_grid_size,beta_timesteps)
         self.att4 = SelfAttention(hid_channels * 2, att2_grid_size)
 
-        self.up2 = Up(hid_channels * 4, hid_channels, att1_grid_size)
+        self.up2 = Up(hid_channels * 4, hid_channels, att1_grid_size, beta_timesteps)
         self.att5 = SelfAttention(hid_channels, att1_grid_size)
 
-        self.up3 = Up(hid_channels * 2, hid_channels, grid_size)
+        self.up3 = Up(hid_channels * 2, hid_channels, grid_size, beta_timesteps)
         self.att6 = SelfAttention(hid_channels, grid_size)
 
         self.outc = nn.Conv2d(hid_channels, in_channels, kernel_size=1)

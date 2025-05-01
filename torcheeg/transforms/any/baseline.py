@@ -1,5 +1,5 @@
 from typing import Dict, Union, List
-
+import numpy as np  
 from ..base_transform import EEGTransform
 
 
@@ -48,8 +48,136 @@ class BaselineRemoval(EEGTransform):
         return eeg - kwargs['baseline']
 
     @property
-    def targets_as_params(self) -> List[str]:
+    def targets_as_params(self):
         return ['baseline']
+    
+    def get_params_dependent_on_targets(self, params):
+        return {'baseline': params['baseline']}
 
-    def get_params_dependent_on_targets(self, params: Dict[str, any]) -> Dict[str, any]:
+class BaselineCorrection(EEGTransform):
+    r'''
+    A transform method to subtract the mean of baseline signal from EEG.
+    
+    TorchEEG recommends using this class in online_transform for higher processing speed. Even though, this class is also supported in offline_transform. Usually, the baseline needs the same transformation as the experimental signal, please add :obj:`apply_to_baseline=True` to all transforms before this operation to ensure that the transformation is performed on the baseline signal
+
+    .. code-block:: python
+
+        from torcheeg import transforms
+
+        t = transforms.BaseCorrection()
+
+        t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg'].shape
+        >>> (32,128)
+    
+    .. automethod:: __call__
+    '''
+    def __init__(self,axis=-1):
+        super(BaselineCorrection, self).__init__(apply_to_baseline=False)
+        self.axis=axis
+
+    def __call__(self, *args, eeg: any, baseline= None, **kwargs) :
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+
+    def apply(self, eeg, **kwargs) -> any:
+        
+         if kwargs['baseline'] is None:
+            return eeg
+         return eeg - kwargs['baseline'].mean(self.axis,keepdims= True)
+    
+    @property
+    def targets_as_params(self):
+        return ['baseline']
+    
+    def get_params_dependent_on_targets(self, params):
+        return {'baseline': params['baseline']}
+    
+
+
+
+class ERSD(EEGTransform):
+    r'''
+    A transform method to calculate the ERSD of EEG.
+    
+    TorchEEG recommends using this class in online_transform for higher processing speed. Even though, this class is also supported in offline_transform. Usually, the baseline needs the same transformation as the experimental signal, please add :obj:`apply_to_baseline=True` to all transforms before this operation to ensure that the transformation is performed on the baseline signal
+
+    .. code-block:: python
+
+        from torcheeg import transforms
+
+        t = transforms.BaseCorrection()
+
+        t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg'].shape
+        >>> (32,128)
+    
+    .. automethod:: __call__
+    '''
+    def __init__(self,axis=-1):
+        super(BaselineCorrection, self).__init__(apply_to_baseline=False)
+        self.axis=axis
+
+    def __call__(self, *args, eeg: any, baseline= None, **kwargs) :
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+
+    def apply(self, eeg, **kwargs) -> any:
+        
+         if kwargs['baseline'] is None:
+            return eeg
+         return (eeg - kwargs['baseline'].mean(self.axis,keepdims= True))/kwargs['baseline'].mean()
+    @property
+    def targets_as_params(self):
+        return ['baseline']
+    
+    def get_params_dependent_on_targets(self, params):
+        return {'baseline': params['baseline']}
+
+
+class Power_ERSD(EEGTransform):
+    r'''
+    A transform method to calculate the ERSD of EEG.
+    
+    TorchEEG recommends using this class in online_transform for higher processing speed. Even though, this class is also supported in offline_transform. Usually, the baseline needs the same transformation as the experimental signal, please add :obj:`apply_to_baseline=True` to all transforms before this operation to ensure that the transformation is performed on the baseline signal
+
+    .. code-block:: python
+
+        from torcheeg import transforms
+
+        t = transforms.BaseCorrection()
+
+        t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg'].shape
+        >>> (32,128)
+    
+    .. automethod:: __call__
+    '''
+    def __init__(self,axis=-1,sample_rate=128):
+        super(BaselineCorrection, self).__init__(apply_to_baseline=False)
+        self.axis=axis
+        self.sample_rate=sample_rate
+
+    def __call__(self, *args, eeg: any, baseline= None, **kwargs) :
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+    @EEGTransform.numpy_based
+    def apply(self, eeg, **kwargs) -> any:
+        eeg = np.fft.fft(eeg,axis=self.axis)
+        freqs = np.fft.fftfreq(eeg.shape[self.axis], 1/self.sample_rate)
+        alpha_band_indices = np.where((freqs >= 8) & (freqs <= 30))
+        eeg = np.abs(eeg)**2
+        eeg = eeg[:,alpha_band_indices]
+        if kwargs['baseline'] is None:
+            return eeg
+        baseline = np.fft.fft(kwargs['baseline'],axis=self.axis)
+        baseline = np.abs(baseline)**2
+        baseline = baseline[:,alpha_band_indices]
+
+
+        return (eeg- baseline)/baseline.mean()
+    
+    
+    @property
+    def targets_as_params(self):
+        return ['baseline']
+    
+    def get_params_dependent_on_targets(self, params):
         return {'baseline': params['baseline']}

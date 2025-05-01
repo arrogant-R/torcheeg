@@ -4,7 +4,7 @@ import torch
 
 class ATCNet(nn.Module):
     r'''
-    ATCNet: An attention-based temporal convolutional network forEEG-based motor imagery classiﬁcation.For more details ,please refer to the following information:
+    ATCNet: An attention-based temporal convolutional network forEEG-based motor imagery classiﬁcation. For more details, please refer to the following information:
 
     - Paper: H. Altaheri, G. Muhammad and M. Alsulaiman, "Physics-Informed Attention Temporal Convolutional Network for EEG-Based Motor Imagery Classification," in IEEE Transactions on Industrial Informatics, vol. 19, no. 2, pp. 2249-2258, Feb. 2023, doi: 10.1109/TII.2022.3197419.
     - URL: https://github.com/Altaheri/EEG-ATCNet

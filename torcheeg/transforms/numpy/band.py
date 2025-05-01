@@ -19,6 +19,7 @@ class BandTransform(EEGTransform):
     def __init__(self,
                  sampling_rate: int = 128,
                  order: int = 5,
+                 chunk_dim = -1,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
                      "alpha": [8, 14],
@@ -27,6 +28,7 @@ class BandTransform(EEGTransform):
                  },
                  apply_to_baseline: bool = False):
         super(BandTransform, self).__init__(apply_to_baseline=apply_to_baseline)
+        self.chunk_dim = chunk_dim
         self.sampling_rate = sampling_rate
         self.order = order
         self.band_dict = band_dict
@@ -34,14 +36,12 @@ class BandTransform(EEGTransform):
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         band_list = []
         for low, high in self.band_dict.values():
-            c_list = []
-            for c in eeg:
-                b, a = butter_bandpass(low,
+            b, a = butter_bandpass(low,
                                        high,
                                        fs=self.sampling_rate,
                                        order=self.order)
-                c_list.append(self.opt(lfilter(b, a, c)))
-            c_list = np.array(c_list)
+            c_list = self.opt(lfilter(b, a, eeg, axis=self.chunk_dim))
+           
             band_list.append(c_list)
         return np.stack(band_list, axis=-1)
 
@@ -141,6 +141,7 @@ class BandDifferentialEntropy(BandTransform):
                  *args,
                  eeg: np.ndarray,
                  baseline: Union[np.ndarray, None] = None,
+                 chunk_dim: int = -1,
                  **kwargs) -> Dict[str, np.ndarray]:
         r'''
         Args:
@@ -152,7 +153,7 @@ class BandDifferentialEntropy(BandTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
-        return 1 / 2 * np.log2(2 * np.pi * np.e * np.var(eeg))
+        return 1 / 2 * np.log2(2 * np.pi * np.e * np.var(eeg,axis=self.chunk_dim))
 
 
 class BandDifferentialEntropyV1(EEGTransform):
